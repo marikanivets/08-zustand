@@ -1,25 +1,26 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import Link from 'next/link';
 import { fetchNotes } from '../../../../lib/api';
 import SearchBox from '../../../../components/SearchBox/SearchBox';
 import Pagination from '../../../../components/Pagination/Pagination';
 import NoteList from '../../../../components/NoteList/NoteList';
-import Modal from '../../../../components/Modal/Modal';
-import NoteForm from '../../../../components/NoteForm/NoteForm';
 import css from './NotesPage.module.css';
 
 interface NotesClientProps {
-  tag: string;
+  params: {
+    slug?: string[];
+  };
 }
 
-export default function NotesClient({ tag }: NotesClientProps) {
-  const queryClient = useQueryClient();
+export default function NotesClient({ params }: NotesClientProps) {
+  const tag = params.slug && params.slug.length > 0 ? params.slug[0] : 'all';
+
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     setPage(1);
@@ -33,6 +34,7 @@ export default function NotesClient({ tag }: NotesClientProps) {
     return () => clearTimeout(handler);
   }, [search]);
 
+  // Запрос данных
   const { data, isLoading } = useQuery({
     queryKey: ['notes', debouncedSearch, page, tag],
     queryFn: () => fetchNotes(debouncedSearch, page, tag),
@@ -46,9 +48,11 @@ export default function NotesClient({ tag }: NotesClientProps) {
     <div className={css.container}>
       <div style={{ display: 'flex', gap: '15px', marginBottom: '20px', alignItems: 'center' }}>
         <SearchBox value={search} onChange={setSearch} />
-        <button onClick={() => setIsModalOpen(true)} className={css.addBtn}>
+        
+        {}
+        <Link href="/notes/action/create" className={css.addBtn}>
           Create note +
-        </button>
+        </Link>
       </div>
 
       {isLoading && !data ? (
@@ -69,12 +73,6 @@ export default function NotesClient({ tag }: NotesClientProps) {
             />
           )}
         </>
-      )}
-
-      {isModalOpen && (
-        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-          <NoteForm onClose={() => setIsModalOpen(false)} />
-        </Modal>
       )}
     </div>
   );

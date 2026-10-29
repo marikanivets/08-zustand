@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import NoteForm from '@/components/NoteForm/NoteForm';
+import TanStackProvider from '@/components/TanStackProvider/TanStackProvider';
 import css from './CreateNote.module.css';
 
 export const metadata: Metadata = {
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
         url: 'https://goit.global',
         width: 1200,
         height: 630,
-        alt: 'Create New Note | NoteHub',
+        alt: 'Create New Note',
       },
     ],
   },
@@ -23,9 +24,12 @@ export const metadata: Metadata = {
 export default function CreateNotePage() {
   return (
     <main className={css.main}>
-      <div className={css.container}>
-        <h1 className={css.title}>Create note</h1>
-        <NoteForm />
+      <div>
+        <h1>Create note</h1>
+        {/* Оборачиваем NoteForm в TanStackProvider для использования React Query */}
+        <TanStackProvider>
+          <NoteForm />
+        </TanStackProvider>
       </div>
     </main>
   );

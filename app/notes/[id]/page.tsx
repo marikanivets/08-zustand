@@ -9,14 +9,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   try {
     const note = await fetchNoteById(id);
+    const pageUrl = `https://notehub.com{id}`;
+    
     return {
-      title: note.title,
-      description: note.content.slice(0, 150),
+      title: note.title || 'Note Details',
+      description: note.content ? note.content.slice(0, 150) : 'View note details.',
       openGraph: {
-        title: note.title,
-        description: note.content,
-        url: `https://notehub.com{id}`,
-        images: [{ url: 'https://goit.global', width: 1200, height: 630 }],
+        title: note.title || 'Note Details',
+        description: note.content || 'View note details.',
+        url: pageUrl,
+        images: [
+          {
+            url: 'https://goit.global',
+            width: 1200,
+            height: 630,
+          },
+        ],
       },
     };
   } catch {
@@ -25,5 +33,5 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function NotePage({ params }: Props) {
-  
+ 
 }
