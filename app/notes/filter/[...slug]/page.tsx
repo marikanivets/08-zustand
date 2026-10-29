@@ -1,30 +1,25 @@
-import { fetchNotes } from '@/lib/api';
-import {
-  dehydrate,
-  HydrationBoundary,
-  QueryClient,
-} from '@tanstack/react-query';
-import NotesClient from './Notes.client';
+import type { Metadata } from 'next';
 
 type Props = {
-  params: Promise<{ slug: string[] }>;
+  params: Promise<{ slug: string }>;
 };
 
-const Notes = async ({ params }: Props) => {
-  const queryClient = new QueryClient();
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const category = slug[0];
+  const title = `Notes - ${slug.charAt(0).toUpperCase() + slug.slice(1)}`;
 
-  await queryClient.prefetchQuery({
-    queryKey: ['notes', '', 1, category],
-    queryFn: () => fetchNotes(category),
-  });
+  return {
+    title,
+    description: `Browse notes tagged with ${slug}. NoteHub allows you to filter and view notes based on specific tags for better organization.`,
+    openGraph: {
+      title,
+      description: `Browse notes tagged with ${slug}.`,
+      url: `https://notehub.com{slug}`,
+      images: [{ url: 'https://goit.global', width: 1200, height: 630, alt: title }],
+    },
+  };
+}
 
-  return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <NotesClient tag={category} />
-    </HydrationBoundary>
-  );
-};
-
-export default Notes;
+export default async function FilterPage({ params }: Props) {
+  // Код вашей страницы...
+}
