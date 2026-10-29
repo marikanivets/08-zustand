@@ -1,40 +1,68 @@
-import type { Metadata } from 'next';
+// app/notes/filter/[...slug]/page.tsx
+import { fetchNotes } from '@/lib/api';
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from '@tanstack/react-query';
 import NotesClient from './Notes.client';
+import { Metadata } from 'next';
 
 type Props = {
-  params: Promise<{ slug?: string[] }>;
+  params: Promise<{ slug: string[] }>;
 };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const resolvedParams = await params;
-  const currentSlug = resolvedParams.slug && resolvedParams.slug.length > 0 
-    ? resolvedParams.slug[0] 
-    : 'all';
+const BASE_URL = 'https://vercel.app';
 
-  const title = `Notes - ${currentSlug.charAt(0).toUpperCase() + currentSlug.slice(1)}`;
-  const pageUrl = `https://notehub.com{currentSlug}`;
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  
+  const note = slug && slug.length > 0 ? slug[0] : 'all';
+
+  const formattedTitle = `Notes - ${note.charAt(0).toUpperCase() + note.slice(1)}`;
+  
+  const pageUrl = `${BASE_URL}/notes/filter/${note}`;
+  const ogImageUrl = `${pageUrl}/og-image.png`;
 
   return {
-    title,
-    description: `Browse notes tagged with ${currentSlug}. NoteHub allows you to filter and view notes based on specific tags.`,
+    title: formattedTitle,
+    description: `Browse notes tagged with ${note}. NoteHub allows you to filter and view notes based on specific tags.`,
     openGraph: {
-      title,
-      description: `Browse notes tagged with ${currentSlug}.`,
+      title: formattedTitle,
+      description: `Browse notes tagged with ${note}. NoteHub allows you to filter and view notes based on specific tags.`,
       url: pageUrl,
       images: [
         {
-          url: 'https://goit.global',
+          url: ogImageUrl,
           width: 1200,
           height: 630,
-          alt: title,
+          alt: `Notes tagged with ${note} | NoteHub`,
         },
       ],
+    },
+    twitter: {
+      title: formattedTitle,
+      description: `Browse notes tagged with ${note}. NoteHub allows you to filter and view notes based on specific tags.`,
+      images: [ogImageUrl], 
     },
   };
 }
 
 export default async function FilterPage({ params }: Props) {
-  const resolvedParams = await params;
-  return <NotesClient params={resolvedParams} />;
-}
+  const queryClient = new QueryClient();
+  const { slug } = await params;
+  
+  const category = slug && slug.length > 0 ? slug[0] : '';
 
+  await queryClient.prefetchQuery({
+    queryKey: ['notes', '', 1, category],
+    queryFn: () => fetchNotes({ search: '', page: 1, tag: category }),
+  });
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      {}
+      <NotesClient tag={category} />
+    </HydrationBoundary>
+  );
+}

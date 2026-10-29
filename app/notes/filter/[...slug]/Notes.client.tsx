@@ -1,79 +1,100 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import Link from 'next/link';
-import { fetchNotes } from '../../../../lib/api';
-import SearchBox from '../../../../components/SearchBox/SearchBox';
-import Pagination from '../../../../components/Pagination/Pagination';
-import NoteList from '../../../../components/NoteList/NoteList';
+import SearchBox from '@/components/SearchBox/SearchBox';
 import css from './NotesPage.module.css';
+import { fetchNotes } from '@/lib/api';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useEffect, useState, useRef } from 'react';
+import toast, { Toaster } from 'react-hot-toast';
+import { useDebouncedCallback } from 'use-debounce';
+import Pagination from '@/components/Pagination/Pagination';
+import Loader from '@/components/Loader/Loader';
+import ErrorMessage from '@/components/ErrorMessage/ErrorMessage';
+import NoteList from '@/components/NoteList/NoteList';
+import { NotesClientProps } from '@/types/note';
+import Link from 'next/link';
 
-interface NotesClientProps {
-  params: {
-    slug?: string[];
-  };
-}
-
-export default function NotesClient({ params }: NotesClientProps) {
-  const tag = params.slug && params.slug.length > 0 ? params.slug[0] : 'all';
-
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+const NotesClient = ({ tag }: NotesClientProps) => {
+  const [searchInput, setSearchInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
+  
+  const lastToastQueryRef = useRef('');
 
   useEffect(() => {
     setPage(1);
+    setSearchInput('');
+    setSearchQuery('');
+    lastToastQueryRef.current = '';
   }, [tag]);
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearch(search);
-      setPage(1);
-    }, 400);
-    return () => clearTimeout(handler);
-  }, [search]);
-
-  // Запрос данных
-  const { data, isLoading } = useQuery({
-    queryKey: ['notes', debouncedSearch, page, tag],
-    queryFn: () => fetchNotes(debouncedSearch, page, tag),
+  const { data, isFetching, isError } = useQuery({
+    queryKey: ['notes', searchQuery, page, tag],
+    queryFn: () => fetchNotes({ search: searchQuery, page, tag }),
     placeholderData: keepPreviousData,
   });
 
-  const notesList = data?.notes || [];
-  const totalPages = data?.totalPages || 1;
+  const notes = data?.notes ?? [];
+  const totalPages = data?.totalPages ?? 1;
+
+  const updateSearchQuery = useDebouncedCallback((value: string) => {
+    setSearchQuery(value);
+    setPage(1);
+  }, 300);
+
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const nextValue = event.target.value;
+    setSearchInput(nextValue);
+    updateSearchQuery(nextValue);
+  };
+
+  useEffect(() => {
+    if (!isFetching && !isError && searchQuery && notes.length === 0) {
+      if (lastToastQueryRef.current !== searchQuery) {
+        toast.error('No such note was found.');
+        lastToastQueryRef.current = searchQuery;
+      }
+    }
+    if (notes.length > 0) {
+      lastToastQueryRef.current = '';
+    }
+  }, [isFetching, isError, searchQuery, notes.length]);
 
   return (
-    <div className={css.container}>
-      <div style={{ display: 'flex', gap: '15px', marginBottom: '20px', alignItems: 'center' }}>
-        <SearchBox value={search} onChange={setSearch} />
-        
-        {}
-        <Link href="/notes/action/create" className={css.addBtn}>
-          Create note +
-        </Link>
-      </div>
-
-      {isLoading && !data ? (
-        <p>Loading, please wait...</p>
-      ) : (
-        <>
-          {notesList.length > 0 ? (
-            <NoteList notes={notesList} />
-          ) : (
-            <p>No notes found for this category.</p>
-          )}
-          
+    <>
+      <div className={css.app}>
+        <header className={css.toolbar}>
+          <SearchBox onSearch={handleSearchChange} value={searchInput} />
           {totalPages > 1 && (
             <Pagination
-              currentPage={page}
               totalPages={totalPages}
-              onPageChange={setPage}
+              page={page}
+              onPageChange={newPage => setPage(newPage)}
             />
           )}
-        </>
-      )}
-    </div>
+
+          <Link className={css.button} href="/notes/action/create">
+            Create note +
+          </Link>
+        </header>
+
+        {isFetching ? (
+          <Loader />
+        ) : isError ? (
+          <ErrorMessage />
+        ) : (
+          notes.length > 0 ? (
+            <NoteList notes={notes} />
+          ) : (
+            <p className={css.emptyMessage}>No notes found for this category.</p>
+          )
+        )}
+
+        <Toaster position="top-right" reverseOrder={false} />
+      </div>
+    </>
   );
-}
+};
+
+export default NotesClient;
+

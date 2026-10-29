@@ -1,36 +1,48 @@
-import type { Metadata } from 'next';
-import NoteForm from '@/components/NoteForm/NoteForm';
-import TanStackProvider from '@/components/TanStackProvider/TanStackProvider';
+import { Metadata } from 'next';
+import dynamic from 'next/dynamic';
 import css from './CreateNote.module.css';
 
+const NoteForm = dynamic(() => import('@/components/NoteForm/NoteForm'), {
+  ssr: false, 
+});
+
+const BASE_URL = 'https://vercel.app';
+
 export const metadata: Metadata = {
-  title: 'Create New Note | NoteHub',
-  description: 'Quickly create a new note in NoteHub - the efficient app for organizing your thoughts and ideas.',
+  title: 'Create new note | NoteHub',
+  description: 'A simple and efficient app for creating and organizing your notes',
   openGraph: {
-    title: 'Create New Note | NoteHub',
-    description: 'Quickly create a new note in NoteHub - the efficient app for organizing your thoughts and ideas.',
-    url: 'https://notehub.com',
+    title: 'Create new note | NoteHub',
+    description: 'A simple and efficient app for creating and organizing your notes',
+    url: `${BASE_URL}/notes/action/create`,
     images: [
       {
-        url: 'https://goit.global',
+        url: `${BASE_URL}/notes/action/create/og-image.png`,
         width: 1200,
         height: 630,
-        alt: 'Create New Note',
+        alt: 'Create new note | NoteHub',
       },
     ],
   },
+  twitter: {
+    title: 'Create new note | NoteHub',
+    description: 'A simple and efficient app for creating and organizing your notes',
+    images: [`${BASE_URL}/notes/action/create/og-image.png`],
+  },
 };
 
-export default function CreateNotePage() {
+const CreateNote = async () => {
   return (
     <main className={css.main}>
-      <div>
-        <h1>Create note</h1>
-        {/* Оборачиваем NoteForm в TanStackProvider для использования React Query */}
-        <TanStackProvider>
-          <NoteForm />
-        </TanStackProvider>
+      <div className={css.container}>
+        <h1 className={css.title}>Create note</h1>
+        {/* Компонент отрендерится безопасно сразу на стороне клиента */}
+        <NoteForm />
       </div>
     </main>
   );
-}
+};
+
+export default CreateNote;
+
+

@@ -1,17 +1,41 @@
-import css from './LayoutNotes.module.css';
+import type { Metadata } from 'next';
+import { Roboto } from 'next/font/google';
 
-type Props = {
+const roboto = Roboto({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '500', '700'],
+  variable: '--font-roboto',
+  display: 'swap',
+});
+
+export const metadata: Metadata = {
+  title: 'Notehub',
+  description: 'Приложение для создания и фильтрации заметок',
+  openGraph: {
+    title: 'Notehub',
+    description: 'Приложение для создания и фильтрации заметок',
+    url: 'https://notehub.com',
+    images: [
+      {
+        url: 'https://notehub.com',
+        width: 1200,
+        height: 630,
+        alt: 'Notehub Preview',
+      },
+    ],
+  },
+};
+
+type RootLayoutProps = {
   children: React.ReactNode;
-  sidebar: React.ReactNode;
 };
 
-const NotesLayout = ({ sidebar, children }: Props) => {
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <section className={css.container}>
-      <aside className={css.sidebar}>{sidebar}</aside>
-      <div className={css.notesWrapper}>{children}</div>
-    </section>
+    <html lang="uk">
+      <body className={roboto.className}>
+        {children}
+      </body>
+    </html>
   );
-};
-
-export default NotesLayout;
+}
